@@ -4,6 +4,11 @@ author: "Your name here"
 output: html_document
 ---
 
+```{r}
+library(ggplot2)
+
+```
+
 Assignments for the course focus on practical aspects of the concepts covered in the lectures. Assignments are based on the material covered in James et al. You will start working on the assignment in the lab sessions after the lectures, but may need to finish them after class.  If you do not get through the whole assignment, do not worry!
 
 ## 1. Working with a sample dataset
@@ -44,16 +49,16 @@ college <- read.csv("http://faculty.marshall.usc.edu/gareth-james/ISL/College.cs
 
 Look at the data using the `View()` function. You should notice that the first column is just the name of each university. We don't really want R to treat this as data. However, it may be handy to have these names for later. Try the following commands:
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 rownames(college) <- college[, 1] 
-View(college)
+#View(college)
 ```
 
 You should see that there is now a `row.names` column with the name of each university recorded. This means that R has given each row a name corresponding to the appropriate university. R will not try to perform calculations on the row names. However, we still need to eliminate the first column in the data where the names are stored. Try
 
 ```{r, eval=FALSE}
 college <- college[, -1] 
-View(college)
+#View(college)
 ```
 
 Now you should see that the first data column is `Private`. Note that another column labeled `row.names` now appears before the `Private` column. However, this is not a data column but rather the name that `R` is giving to each row.
@@ -61,10 +66,22 @@ Now you should see that the first data column is `Private`. Note that another co
 ### 1.3 Try some operations
 
 a.  Use the `summary()` function to produce a numerical summary of the variables in the data set.
-   
+
+```{r}
+summary(college)
+```
+
 b.  Use the `pairs()` function to produce a scatterplot matrix of the first ten columns or variables of the data. Recall that you can reference the first ten columns of a matrix `A` using `A[,1:10]`.
    
+```{r}
+   pairs(college[,1:10])
+```
+   
 c.  Use the `plot()` function to produce side-by-side boxplots of `Outstate` versus `Private`.
+
+```{r}
+   plot(college$Private, college$Outstate)
+```
    
 d.  Create a new qualitative variable, called `Elite`, by *binning* the `Top10perc` variable. We are going to divide universities into two groups based on whether or not the proportion of students coming from the top 10% of their high school classes exceeds 50%.
 
@@ -75,21 +92,195 @@ Elite <- as.factor(Elite)
 college <- data.frame(college, Elite)
 ```
 
+```{r, eval=FALSE}
+view(college)
+```
+
 Use the `summary()` function to see how many elite universities there are. Now use the `plot()` function to produce side-by-side boxplots of `Outstate` versus `Elite`.
-   
+```{r}
+summary(college$Elite)
+```
+
+```{r, eval=FALSE}
+# create a side-by-side boxplot of `outstate` versus `elite`
+plot(college$Elite, college$Outstate)
+```
+
+```{r}
+# general subsetting stuff 
+colnames(college)
+rownames(college) 
+
+# can subset by col number as such: 
+# check the col number for which colname is "Private"
+which(colnames(college) == "Private")
+
+# then plot it
+plot(college[, 2])
+
+# or subset by name of the col
+class(college$Elite)
+```
+
 Continue exploring the data, and provide a brief summary of what you discover.
+```{r}
+
+# Some interesting observations:
+# what is the university with the most students in the top 10% of class
+rownames(college[which.max(college$Top10perc),])
+cat(" has top10perc value of", max(college$Top10perc))
+
+# what university has the smallest acceptance rate
+cat("\n")
+rownames(college[which.min(college$Accept),])
+cat(" has top10perc value of", min(college$Accept))
+
+# what university has the most liberal acceptance rate
+cat("\n")
+rownames(college[which.max(college$Accept),])
+cat(" has top10perc value of", min(college$Accept))
+row.names(college)[which.min(college$acceptance_rate)] 
+
+# High tuition correlates to high graduation rate
+plot(college$Grad.Rate,college$Expend)
+abline(lm(college$Grad.Rate~college$Expend))
+
+# Colleges with low acceptance rate tend to have low S:F ratio.
+plot(college$Accept/college$Apps, college$S.F.Ratio)
+
+# Colleges with the most students from top 10% perc don't necessarily have
+# the highest graduation rate. Also, rate > 100 is erroneous!
+plot(college$Top10perc, college$Grad.Rate)
+
+```
+
+
+```{r}
+
+par(mfrow=c(2,2))
+hist(college$Top10perc, xlab="Private")
+hist(college$Enroll, xlab="Enrol")
+hist(college$Apps, xlab="Acceptance", main="")
+
+# interesting analysis
+row.names(college)[which.max(college$Top10perc)]
+row.names(college)[which(college$Grad.Rate>100)]
+```
 
 
 ### 2. Working with the automotive dataset
 
 This exercise involves the `Auto` data set available as `Auto.csv` from the website for the main course textbook James et al. http://faculty.marshall.usc.edu/gareth-james/ISL/data.html. Make sure that the missing values have been removed from the data. You should load that dataset as the first step of the exercise. 
 
+```{r}
+# important to do na.string because in the ori data, NA is NOT NA
+auto <- read.csv("http://faculty.marshall.usc.edu/gareth-james/ISL/Auto.csv", header=TRUE, na.strings="?")
+
+summary(auto)
+dim(auto)
+# already no missing value?
+sum(is.na(auto))
+# another way to test is to see if row count is the same after omitting na
+
+# omit the rows with NA 
+auto <- na.omit(auto)
+
+# get a col with row names
+rownames(auto) <- auto[, "name"] 
+listcolnames <- colnames(auto)
+
+# check all classes of columns
+for (row in c(1:9)){
+   print(cat("colname =", listcolnames[row]))
+   print(class(auto[, row])) 
+}
+
+```
+```{r}
+# try shuffling the order of data
+set.seed(100)
+auto.sample <- auto[sample(1:nrow(auto), 5),]
+
+# reorder
+```
+
 (a) Which of the predictors are quantitative, and which are qualitative?
+```{r}
+# alternative ways to find which one is numeric
+sapply(auto, is.numeric)
+```
+> Ans: Every predictor except horsepower and name is quantitative. 
+
 (b) What is the *range* of each quantitative predictor? You can answer this using the `range()` function.
+
+```{r}
+for (col in c(1:9)){
+   workingcol <- (auto[, col])
+   if (is.numeric(workingcol) || is.integer(workingcol)){
+      cat("\n", col, ":", listcolnames[col])
+      cat(" has range ", range(workingcol)[1], "to", range(workingcol)[2])
+   }
+}
+
+# another way to find the range for all cols that are numeric
+summary(auto[,which(sapply(auto, is.numeric))])
+```
+
 (c) What is the mean and standard deviation of each quantitative predictor?
+```{r}
+colnames(auto)
+```
+
+```{r}
+# horsepower, name are factors, so we exclude them
+excl_horse <- which(colnames(auto) == "horsepower")
+excl_name <- which(colnames(auto) == "name")
+excl_y <- which(colnames(auto) == "mpg")
+excl_list <- c(excl_horse, excl_name, excl_y)
+
+print("Printing the means: ")
+sapply(auto[, -excl_list], mean)
+print("Printing the standard deviations: ")
+sapply(auto[, -excl_list], sd)
+```
+
 (d) Now remove the 10th through 85th observations. What is the range, mean, and standard deviation of each predictor in the subset of the data that remains?
+
+```{r}
+# remove the 10th through 85th observations
+autoless <- auto[-c(10:85),]
+summary(autoless)
+
+# validate result
+summary(autoless) == summary(auto)
+cat("removed", nrow(auto) - nrow(autoless), "observations")
+nrow(auto) == nrow(autoless)
+```
+
 (e) Using the full data set, investigate the predictors graphically, using scatterplots or other tools of your choice. Create some plots highlighting the relationships among the predictors. Comment on your findings.
+
+```{r}
+colnames(auto)
+g = ggplot(auto)
+horsepower2 <- as.numeric(auto$horsepower)
+ggplot(auto, mapping=aes(y=mpg, x=horsepower2)) + geom_point()
+g + geom_point(y=mpg, x=weight, alpha = year)
+```
+
 (f) Suppose that we wish to predict gas mileage (`mpg`) on the basis of the other variables. Do your plots suggest that any of the other variables might be useful in predicting `mpg`? Justify your answer.
+
+```{r}
+#install.packages("ISLR")
+library(ISLR)
+
+auto <- data.frame(auto)
+y = auto$mpg
+with(auto, lm.fit(mpg~horsepower+cylinders))
+lm(mpg~cylinders+weight, auto)
+
+# fit a linear model on all variables except the excluded ones 
+summary(lm(mpg~., data=auto[, -excl_list]))
+```
 
 
 ### Further materials
